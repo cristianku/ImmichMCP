@@ -23,7 +23,7 @@ public static class GalleryResource
     };
 
     // These aliases prevent cached ChatGPT tool descriptors from failing while
-    // the host refreshes from the current v4 resource URI.
+    // the host refreshes from the current versioned resource URI.
     [McpServerResource(
         UriTemplate = Tools.GalleryTools.LegacyResourceUriV2,
         Name = "Legacy Immich photo gallery v2",
@@ -100,11 +100,25 @@ public static class GalleryResource
             const viewer = document.getElementById("viewer");
             const viewerImage = document.getElementById("viewer-image");
             const viewerLabel = document.getElementById("viewer-label");
+            let objectUrls = [];
 
             function formatDate(value) {
               if (!value) return "";
               const date = new Date(value);
               return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+            }
+
+            function blobUrlFromImageBlock(block) {
+              try {
+                const binary = atob(block.data);
+                const bytes = new Uint8Array(binary.length);
+                for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+                const url = URL.createObjectURL(new Blob([bytes], { type: block.mimeType }));
+                objectUrls.push(url);
+                return url;
+              } catch {
+                return null;
+              }
             }
 
             function render(result) {
@@ -115,6 +129,8 @@ public static class GalleryResource
               const images = Array.isArray(output?.images) ? output.images : [];
               title.textContent = typeof output?.title === "string" ? output.title : "Immich photos";
               count.textContent = images.length === 1 ? "1 photo" : `${images.length} photos`;
+              for (const url of objectUrls) URL.revokeObjectURL(url);
+              objectUrls = [];
               gallery.replaceChildren();
               status.hidden = images.length > 0;
               status.textContent = images.length > 0 ? "" : "No photos to display.";
@@ -122,17 +138,18 @@ public static class GalleryResource
               for (const [index, image] of images.entries()) {
                 const block = imageBlocks[index];
                 if (!image || !block || !block.mimeType.startsWith("image/")) continue;
-                const dataUri = `data:${block.mimeType};base64,${block.data}`;
+                const imageUrl = blobUrlFromImageBlock(block);
+                if (!imageUrl) continue;
                 const figure = document.createElement("figure");
                 const open = document.createElement("button");
                 open.type = "button";
                 const img = document.createElement("img");
-                img.src = dataUri;
+                img.src = imageUrl;
                 img.alt = typeof image.fileName === "string" ? image.fileName : "Immich photo";
                 img.loading = "eager";
                 open.append(img);
                 open.addEventListener("click", () => {
-                  viewerImage.src = dataUri;
+                  viewerImage.src = imageUrl;
                   viewerImage.alt = img.alt;
                   viewerLabel.textContent = [image.fileName, formatDate(image.capturedAt), image.location].filter(Boolean).join(" · ");
                   viewer.showModal();
