@@ -41,7 +41,8 @@ public class GalleryToolsTests
         var widget = result.Meta!["gallery"].Should().BeOfType<JsonObject>().Subject;
         var image = widget["images"].Should().BeOfType<JsonArray>().Subject[0]
             .Should().BeOfType<JsonObject>().Subject;
-        image["dataUri"].Should().BeOfType<JsonValue>().Which.GetValue<string>()
+        image["dataUri"].Should().NotBeNull();
+        image["dataUri"]!.GetValue<string>()
             .Should().Be($"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}");
     }
 

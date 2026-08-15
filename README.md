@@ -37,7 +37,7 @@ dotnet test ImmichMCP.Tests/ImmichMCP.Tests.csproj --filter "Category=Integratio
 ```
 
 Mutation coverage (create/update/delete paths) is disabled by default. Enable it explicitly
-to also run the full 49-tool smoke:
+to also run the full 50-tool smoke:
 
 ```bash
 export IMMICH_INTEGRATION_MUTATION_TESTS=true
@@ -47,7 +47,7 @@ dotnet test ImmichMCP.Tests/ImmichMCP.Tests.csproj --filter "Category=Integratio
 (If your Immich runs somewhere not directly reachable, point `IMMICH_BASE_URL` at it however
 you normally reach it — e.g. a port-forward or tunnel — before running the tests.)
 
-With mutation coverage enabled, `ToolCoverageIntegrationTests` exercises **all 49 tools**
+With mutation coverage enabled, `ToolCoverageIntegrationTests` exercises **all 50 tools**
 against the live server. It is strictly non-destructive to existing data: every mutation
 runs on throwaway fixtures the test creates (uploaded PNGs, an album, a tag, shared links,
 an activity) and teardown deletes only those; the two tools that would mutate real,
