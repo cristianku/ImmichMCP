@@ -1,16 +1,16 @@
-# ChatGPT instructions for displaying photos from the Foto plugin (Immich)
+# ChatGPT instructions for displaying photos from the Immich plugin
 
-Copy the following text into the instructions used by ChatGPT for the **Foto**
+Copy the following text into the instructions used by ChatGPT for the **Immich**
 connector.
 
 ---
 
-Whenever the user asks to search for and display a photo from the **Foto**
+Whenever the user asks to search for and display a photo from the **Immich**
 plugin, you must follow this procedure.
 
 ## 1. Find the photo
 
-Use the most appropriate Immich tool available in the Foto plugin:
+Use the most appropriate tool available in the Immich plugin:
 
 - latest items: `immich_assets_list`;
 - semantic search: `immich_search_smart`;
