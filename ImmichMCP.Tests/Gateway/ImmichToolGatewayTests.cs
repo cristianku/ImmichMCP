@@ -15,7 +15,7 @@ public class ImmichToolGatewayTests
         using var services = CreateServices();
         var registry = services.GetRequiredService<ImmichToolRegistry>();
 
-        registry.Tools.Should().HaveCount(50);
+        registry.Tools.Should().HaveCount(51);
         registry.Categories.Should().BeEquivalentTo(
             "activities",
             "albums",
