@@ -1,6 +1,6 @@
 using System.Net;
-using System.Text.Json.Nodes;
 using FluentAssertions;
+using ImmichMCP.Resources;
 using ImmichMCP.Tests.Fixtures;
 using ImmichMCP.Tools;
 using ModelContextProtocol.Protocol;
@@ -13,7 +13,7 @@ public class GalleryToolsTests
     private const string AssetId = "asset-1";
 
     [Fact]
-    public async Task ShowGallery_ReturnsLightweightModelDataAndPrivateWidgetPreview()
+    public async Task ShowGallery_ReturnsStructuredMetadataAndMcpImageContent()
     {
         // Arrange
         var (client, handler) = MockHttpClientFactory.CreateMockClient();
@@ -37,13 +37,10 @@ public class GalleryToolsTests
         structured.GetProperty("images")[0].GetProperty("fileName").GetString().Should().Be("beach.jpg");
         structured.GetRawText().Should().NotContain("data:image/");
 
-        result.Meta.Should().NotBeNull();
-        var widget = result.Meta!["gallery"].Should().BeOfType<JsonObject>().Subject;
-        var image = widget["images"].Should().BeOfType<JsonArray>().Subject[0]
-            .Should().BeOfType<JsonObject>().Subject;
-        image["dataUri"].Should().NotBeNull();
-        image["dataUri"]!.GetValue<string>()
-            .Should().Be($"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}");
+        result.Meta.Should().BeNull();
+        var image = result.Content.OfType<ImageContentBlock>().Should().ContainSingle().Subject;
+        image.MimeType.Should().Be("image/jpeg");
+        image.Data.Should().Be(Convert.ToBase64String(imageBytes));
     }
 
     [Fact]
@@ -60,5 +57,19 @@ public class GalleryToolsTests
         // Assert
         result.IsError.Should().BeTrue();
         result.Content.OfType<TextContentBlock>().Single().Text.Should().Contain("None of the requested Immich assets");
+    }
+
+    [Fact]
+    public void GalleryResource_UsesVersionedMcpAppTemplateAndStandardToolResultFields()
+    {
+        // Act
+        var resource = GalleryResource.GetGallery().Should().BeOfType<TextResourceContents>().Subject;
+
+        // Assert
+        resource.Uri.Should().Be("ui://immich/gallery-v3.html");
+        resource.MimeType.Should().Be("text/html;profile=mcp-app");
+        resource.Text.Should().Contain("ui/notifications/tool-result");
+        resource.Text.Should().Contain("result?.structuredContent");
+        resource.Text.Should().Contain("result?.content");
     }
 }

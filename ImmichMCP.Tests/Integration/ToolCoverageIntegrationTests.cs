@@ -36,7 +36,7 @@ public class ToolCoverageIntegrationTests
     {
         "immich_ping", "immich_capabilities",
         "immich_search_metadata", "immich_search_smart", "immich_search_ocr", "immich_search_explore",
-        "immich_gallery_show",
+        "immich_assets_show",
         "immich_assets_statistics", "immich_assets_list", "immich_assets_get", "immich_assets_exif",
         "immich_assets_download_original", "immich_assets_download_thumbnail", "immich_assets_upload",
         "immich_assets_upload_from_path", "immich_assets_upload_init", "immich_assets_upload_status",
@@ -250,16 +250,16 @@ public class ToolCoverageIntegrationTests
                     var gallery = await GalleryTools.ShowGallery(client, [asset1], "Integration test gallery");
                     if (gallery.IsError == true || gallery.StructuredContent?.GetProperty("images").GetArrayLength() != 1)
                     {
-                        Set("immich_gallery_show", "FAIL", "gallery did not return the uploaded fixture preview");
+                        Set("immich_assets_show", "FAIL", "gallery did not return the uploaded fixture preview");
                     }
                     else
                     {
-                        Set("immich_gallery_show", "PASS", null);
+                        Set("immich_assets_show", "PASS", null);
                     }
                 }
                 catch (Exception ex)
                 {
-                    Set("immich_gallery_show", "FAIL", Trunc(ex.Message));
+                    Set("immich_assets_show", "FAIL", Trunc(ex.Message));
                 }
                 await Ok("immich_assets_update", () => AssetTools.Update(client, asset1, isFavorite: true, description: "mcp tool test"));
                 await Ok("immich_assets_bulk_update", () => AssetTools.BulkUpdate(client, asset1, isFavorite: false, dryRun: false, confirm: true));

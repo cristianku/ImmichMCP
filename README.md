@@ -125,11 +125,11 @@ docker run -e IMMICH_BASE_URL="https://photos.example.com" \
 
 In `gateway` mode, `immich_tools_enable` emits the MCP `notifications/tools/list_changed` notification so clients can refresh the normal `tools/list` inventory after enabling a category or tool.
 
-For a ChatGPT connection, use `IMMICH_TOOL_MODE=static`. The `immich_gallery_show` tool is a
+For a ChatGPT connection, use `IMMICH_TOOL_MODE=static`. The `immich_assets_show` tool is a
 read-only render step: first run `immich_search_smart` (or a people/metadata search), then pass
 the final asset IDs to the gallery. Immich performs the visual search; only the selected thumbnail
-previews are sent to the ChatGPT component for display. They are kept in the widget's private
-metadata rather than being sent to the model as base64 text.
+previews are returned as MCP image blocks and rendered by the ChatGPT component. The structured
+result contains only lightweight IDs and metadata, not base64 image text.
 
 ## Claude Desktop Configuration
 
@@ -184,7 +184,7 @@ Or with Docker:
 | `immich_assets_exif` | Get EXIF data for an asset |
 | `immich_assets_download_original` | Get download URL for original (or inline content with `DOWNLOAD_MODE=base64`) |
 | `immich_assets_download_thumbnail` | Get thumbnail/preview URLs (or inline preview image with `DOWNLOAD_MODE=base64`) |
-| `immich_gallery_show` | Display up to 8 final selected assets as an inline ChatGPT photo gallery |
+| `immich_assets_show` | Display up to 8 final selected assets as an inline ChatGPT photo gallery |
 | `immich_assets_upload` | Upload asset (base64) |
 | `immich_assets_upload_from_path` | Upload from local file path |
 | `immich_assets_upload_authorize` | Mint a short-lived, upload-only URL so a client can upload local files **directly** to Immich (no API key exposed) |

@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Get thumbnail and preview URLs for an asset. When DOWNLOAD_MODE=base64, returns the preview image content inline instead.")]
+    [Description("Fetch a thumbnail for internal model inspection. This tool does not display the photo visibly to the user. When the user asks to see or show photos, finish with immich_assets_show. When DOWNLOAD_MODE=base64, returns the preview image content inline to the model.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,

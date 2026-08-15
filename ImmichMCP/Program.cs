@@ -248,7 +248,7 @@ bool UseToolGateway(IConfiguration configuration)
 void ConfigureMcpCapabilities(McpServerOptions options, IConfiguration configuration)
 {
     options.ServerInstructions = """
-        ImmichMCP searches and manages the user's private Immich library. For photo requests, first use the appropriate search, people, or asset tool to identify matching asset IDs. When the user asks to see, show, browse, inspect, or find photos, always finish by calling immich_gallery_show with the final matching asset IDs, newest first. Do not answer a request to see photos with filenames or metadata alone. The gallery is read-only and displays private thumbnail previews.
+        ImmichMCP searches and manages the user's private Immich library. For photo requests, first use the appropriate search, people, or asset tool to identify matching asset IDs. When the user asks to see, show, browse, inspect, or find photos, always finish by calling immich_assets_show with the final matching asset IDs, newest first. immich_assets_show is the only tool that displays photos visibly to the user. immich_assets_download_thumbnail is only for internal model inspection and is never a substitute for immich_assets_show. Do not answer a request to see photos with filenames or metadata alone. The gallery is read-only and displays private thumbnail previews.
         """;
 
     if (!UseToolGateway(configuration))

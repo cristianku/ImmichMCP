@@ -35,21 +35,22 @@ public static class GalleryResource
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width,initial-scale=1">
           <style>
-            :root { color-scheme: light dark; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+            :root { color-scheme: light; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; --background: #fff; --foreground: #161616; --muted: #6b7280; --card: #f7f7f8; --border: #dedfe2; }
+            @media (prefers-color-scheme: dark) { :root { color-scheme: dark; --background: #212121; --foreground: #f3f4f6; --muted: #a3a3a3; --card: #2f2f2f; --border: #4b4b4b; } }
             * { box-sizing: border-box; }
-            body { margin: 0; padding: 12px; color: CanvasText; background: transparent; }
+            body { margin: 0; padding: 12px; color: var(--foreground); background: var(--background); }
             header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 10px; }
             h1 { margin: 0; font-size: 18px; line-height: 1.3; }
-            #count { color: GrayText; font-size: 13px; white-space: nowrap; }
-            #status { color: GrayText; padding: 16px 2px; }
+            #count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+            #status { color: var(--muted); padding: 16px 2px; }
             #gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
-            figure { margin: 0; min-width: 0; overflow: hidden; border: 1px solid color-mix(in srgb, CanvasText 15%, transparent); border-radius: 12px; background: color-mix(in srgb, Canvas 94%, CanvasText 6%); }
+            figure { margin: 0; min-width: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: var(--card); }
             button { display: block; width: 100%; padding: 0; border: 0; background: transparent; cursor: zoom-in; }
-            img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: color-mix(in srgb, Canvas 90%, CanvasText 10%); }
+            img { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: var(--card); }
             figcaption { padding: 8px 9px 9px; min-width: 0; }
             .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
-            .meta { margin-top: 3px; color: GrayText; font-size: 11px; line-height: 1.3; }
-            dialog { width: min(94vw, 1100px); max-width: 1100px; border: 0; border-radius: 14px; padding: 0; background: Canvas; color: CanvasText; box-shadow: 0 20px 70px rgb(0 0 0 / .45); }
+            .meta { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.3; }
+            dialog { width: min(94vw, 1100px); max-width: 1100px; border: 0; border-radius: 14px; padding: 0; background: var(--background); color: var(--foreground); box-shadow: 0 20px 70px rgb(0 0 0 / .45); }
             dialog::backdrop { background: rgb(0 0 0 / .72); }
             dialog img { width: 100%; max-height: 78vh; aspect-ratio: auto; object-fit: contain; border-radius: 14px 14px 0 0; }
             .dialog-meta { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; font-size: 13px; }
@@ -80,7 +81,11 @@ public static class GalleryResource
               return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
             }
 
-            function render(output) {
+            function render(result) {
+              const output = result?.structuredContent ?? null;
+              const imageBlocks = Array.isArray(result?.content)
+                ? result.content.filter(block => block?.type === "image" && typeof block.data === "string" && typeof block.mimeType === "string")
+                : [];
               const images = Array.isArray(output?.images) ? output.images : [];
               title.textContent = typeof output?.title === "string" ? output.title : "Immich photos";
               count.textContent = images.length === 1 ? "1 photo" : `${images.length} photos`;
@@ -88,18 +93,20 @@ public static class GalleryResource
               status.hidden = images.length > 0;
               status.textContent = images.length > 0 ? "" : "No photos to display.";
 
-              for (const image of images) {
-                if (!image || typeof image.dataUri !== "string" || !image.dataUri.startsWith("data:image/")) continue;
+              for (const [index, image] of images.entries()) {
+                const block = imageBlocks[index];
+                if (!image || !block || !block.mimeType.startsWith("image/")) continue;
+                const dataUri = `data:${block.mimeType};base64,${block.data}`;
                 const figure = document.createElement("figure");
                 const open = document.createElement("button");
                 open.type = "button";
                 const img = document.createElement("img");
-                img.src = image.dataUri;
+                img.src = dataUri;
                 img.alt = typeof image.fileName === "string" ? image.fileName : "Immich photo";
                 img.loading = "eager";
                 open.append(img);
                 open.addEventListener("click", () => {
-                  viewerImage.src = image.dataUri;
+                  viewerImage.src = dataUri;
                   viewerImage.alt = img.alt;
                   viewerLabel.textContent = [image.fileName, formatDate(image.capturedAt), image.location].filter(Boolean).join(" · ");
                   viewer.showModal();
@@ -118,9 +125,8 @@ public static class GalleryResource
               }
             }
 
-            function outputFrom(params) {
-              const result = params?.toolResult ?? params?.result ?? params;
-              return result?._meta?.gallery ?? result?.meta?.gallery ?? result?.structuredContent ?? null;
+            function resultFrom(params) {
+              return params?.toolResult ?? params?.result ?? params;
             }
 
             window.addEventListener("message", (event) => {
@@ -128,14 +134,14 @@ public static class GalleryResource
               const message = event.data;
               if (!message || message.jsonrpc !== "2.0") return;
               if (message.method === "ui/initialize" || message.method === "ui/notifications/tool-result") {
-                render(outputFrom(message.params));
+                render(resultFrom(message.params));
               }
             }, { passive: true });
 
             viewer.querySelector(".close").addEventListener("click", () => viewer.close());
             viewer.addEventListener("click", (event) => { if (event.target === viewer) viewer.close(); });
 
-            if (window.openai?.toolOutput) render(outputFrom(window.openai.toolOutput));
+            if (window.openai?.toolOutput) render(resultFrom(window.openai.toolOutput));
           </script>
         </body>
         </html>
