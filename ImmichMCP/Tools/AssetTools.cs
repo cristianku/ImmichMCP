@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. With DOWNLOAD_MODE=base64 it returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Do not stop at filenames, metadata, or the technical tool output.")]
+    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64 it also returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -289,7 +289,14 @@ public static class AssetTools
                     original_file_name = asset.OriginalFileName,
                     thumbnail_url = downloadInfo.ThumbnailUrl,
                     preview_url = downloadInfo.PreviewUrl,
-                    thumbhash = asset.Thumbhash
+                    thumbhash = asset.Thumbhash,
+                    captured_at = asset.ExifInfo?.DateTimeOriginal ?? asset.LocalDateTime,
+                    location = FormatLocation(asset.ExifInfo),
+                    city = asset.ExifInfo?.City,
+                    state = asset.ExifInfo?.State,
+                    country = asset.ExifInfo?.Country,
+                    latitude = asset.ExifInfo?.Latitude,
+                    longitude = asset.ExifInfo?.Longitude
                 },
                 new McpMeta { ImmichBaseUrl = client.BaseUrl }
             );
@@ -315,7 +322,14 @@ public static class AssetTools
                 mime_type = mimeType,
                 file_size = bytes.Length,
                 encoding = "base64",
-                thumbhash = asset.Thumbhash
+                thumbhash = asset.Thumbhash,
+                captured_at = asset.ExifInfo?.DateTimeOriginal ?? asset.LocalDateTime,
+                location = FormatLocation(asset.ExifInfo),
+                city = asset.ExifInfo?.City,
+                state = asset.ExifInfo?.State,
+                country = asset.ExifInfo?.Country,
+                latitude = asset.ExifInfo?.Latitude,
+                longitude = asset.ExifInfo?.Longitude
             },
             new McpMeta { ImmichBaseUrl = client.BaseUrl }
         );
@@ -324,6 +338,21 @@ public static class AssetTools
 
     private static bool IsBase64Mode(ImmichClient client) =>
         string.Equals(client.DownloadMode, "base64", StringComparison.OrdinalIgnoreCase);
+
+    private static string? FormatLocation(ExifInfo? exifInfo)
+    {
+        if (exifInfo == null)
+        {
+            return null;
+        }
+
+        var parts = new[] { exifInfo.City, exifInfo.State, exifInfo.Country }
+            .Where(part => !string.IsNullOrWhiteSpace(part))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        var location = string.Join(", ", parts);
+        return string.IsNullOrWhiteSpace(location) ? null : location;
+    }
 
     private static CallToolResult AssetNotFoundResult(string id, ImmichClient client) =>
         TextResult(JsonSerializer.Serialize(McpErrorResponse.Create(

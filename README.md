@@ -126,7 +126,9 @@ In `gateway` mode, `immich_tools_enable` emits the MCP `notifications/tools/list
 
 For a ChatGPT connection, use `IMMICH_TOOL_MODE=static` and `DOWNLOAD_MODE=base64`. After a
 smart, people, or metadata search, use `immich_assets_download_thumbnail` for each final asset.
-It returns the selected preview as a standard MCP image content block.
+It returns the selected preview as a standard MCP image content block together with the capture
+date, best available location, and GPS coordinates. Clients should print a concise location/date
+caption immediately below each embedded photo and must not infer missing metadata.
 
 ## Claude Desktop Configuration
 
@@ -180,7 +182,7 @@ Or with Docker:
 | `immich_assets_get` | Get full asset metadata |
 | `immich_assets_exif` | Get EXIF data for an asset |
 | `immich_assets_download_original` | Get download URL for original (or inline content with `DOWNLOAD_MODE=base64`) |
-| `immich_assets_download_thumbnail` | Get thumbnail/preview URLs (or inline preview image with `DOWNLOAD_MODE=base64`) |
+| `immich_assets_download_thumbnail` | Get thumbnail/preview URLs, capture/location/GPS metadata (or inline preview image with `DOWNLOAD_MODE=base64`) |
 | `immich_assets_upload` | Upload asset (base64) |
 | `immich_assets_upload_from_path` | Upload from local file path |
 | `immich_assets_upload_authorize` | Mint a short-lived, upload-only URL so a client can upload local files **directly** to Immich (no API key exposed) |

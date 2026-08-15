@@ -4,6 +4,7 @@ using FluentAssertions;
 using ModelContextProtocol.Protocol;
 using RichardSzalay.MockHttp;
 using ImmichMCP.Client;
+using ImmichMCP.Models.Assets;
 using ImmichMCP.Tests.Fixtures;
 using ImmichMCP.Tools;
 
@@ -13,9 +14,13 @@ public class AssetDownloadToolTests
 {
     private const string AssetId = "asset-1";
 
-    private static void MockAssetGet(MockHttpMessageHandler handler, string originalFileName = "photo.jpg", string type = "IMAGE")
+    private static void MockAssetGet(
+        MockHttpMessageHandler handler,
+        string originalFileName = "photo.jpg",
+        string type = "IMAGE",
+        Asset? asset = null)
     {
-        var asset = TestFixtures.CreateAsset(id: AssetId, type: type, originalFileName: originalFileName);
+        asset ??= TestFixtures.CreateAsset(id: AssetId, type: type, originalFileName: originalFileName);
         handler.When(HttpMethod.Get, $"*/assets/{AssetId}")
             .Respond("application/json", TestFixtures.ToJson(asset));
     }
@@ -31,7 +36,20 @@ public class AssetDownloadToolTests
     {
         // Arrange
         var (client, handler) = MockHttpClientFactory.CreateMockClient(downloadMode: "base64");
-        MockAssetGet(handler);
+        var capturedAt = new DateTime(2026, 8, 15, 17, 54, 27, DateTimeKind.Unspecified);
+        var asset = TestFixtures.CreateAsset(id: AssetId) with
+        {
+            ExifInfo = new ExifInfo
+            {
+                DateTimeOriginal = capturedAt,
+                City = "Densbüren",
+                State = "Aargau",
+                Country = "Switzerland",
+                Latitude = 47.455,
+                Longitude = 8.053
+            }
+        };
+        MockAssetGet(handler, asset: asset);
         var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03 };
         handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
             .WithQueryString("size", "preview")
@@ -43,7 +61,15 @@ public class AssetDownloadToolTests
         // Assert
         using var json = ParseEnvelope(result);
         json.RootElement.GetProperty("ok").GetBoolean().Should().BeTrue();
-        json.RootElement.GetProperty("result").GetProperty("encoding").GetString().Should().Be("base64");
+        var response = json.RootElement.GetProperty("result");
+        response.GetProperty("encoding").GetString().Should().Be("base64");
+        response.GetProperty("captured_at").GetDateTime().Should().Be(capturedAt);
+        response.GetProperty("location").GetString().Should().Be("Densbüren, Aargau, Switzerland");
+        response.GetProperty("city").GetString().Should().Be("Densbüren");
+        response.GetProperty("state").GetString().Should().Be("Aargau");
+        response.GetProperty("country").GetString().Should().Be("Switzerland");
+        response.GetProperty("latitude").GetDouble().Should().Be(47.455);
+        response.GetProperty("longitude").GetDouble().Should().Be(8.053);
 
         var image = result.Content.OfType<ImageContentBlock>().Should().ContainSingle().Subject;
         image.MimeType.Should().Be("image/jpeg");
@@ -106,8 +132,11 @@ public class AssetDownloadToolTests
         // Assert
         result.Content.Should().ContainSingle().Which.Should().BeOfType<TextContentBlock>();
         using var json = ParseEnvelope(result);
-        json.RootElement.GetProperty("result").GetProperty("preview_url").GetString()
+        var response = json.RootElement.GetProperty("result");
+        response.GetProperty("preview_url").GetString()
             .Should().Be($"https://photos.example.com/api/assets/{AssetId}/thumbnail?size=preview");
+        response.GetProperty("location").GetString().Should().Be("New York, USA");
+        response.GetProperty("captured_at").GetDateTime().Should().BeCloseTo(DateTime.UtcNow.AddDays(-1), TimeSpan.FromSeconds(5));
     }
 
     [Fact]
