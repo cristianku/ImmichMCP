@@ -129,6 +129,26 @@ public static class GalleryResource
               return params?.toolResult ?? params?.result ?? params;
             }
 
+            function normalizeResult(value) {
+              if (typeof value === "string") {
+                try { value = JSON.parse(value); } catch { return null; }
+              }
+              return value?.result ?? value ?? null;
+            }
+
+            function renderChatGptGlobals(globals) {
+              const metadata = globals?.toolResponseMetadata;
+              const fullResult = normalizeResult(metadata?.mcp_tool_result ?? metadata?.call_tool_result);
+              if (fullResult?.structuredContent || Array.isArray(fullResult?.content)) {
+                render(fullResult);
+                return;
+              }
+
+              if (globals?.toolOutput) {
+                render({ structuredContent: globals.toolOutput, content: [] });
+              }
+            }
+
             window.addEventListener("message", (event) => {
               if (event.source !== window.parent) return;
               const message = event.data;
@@ -138,10 +158,14 @@ public static class GalleryResource
               }
             }, { passive: true });
 
+            window.addEventListener("openai:set_globals", (event) => {
+              renderChatGptGlobals(event.detail?.globals);
+            }, { passive: true });
+
             viewer.querySelector(".close").addEventListener("click", () => viewer.close());
             viewer.addEventListener("click", (event) => { if (event.target === viewer) viewer.close(); });
 
-            if (window.openai?.toolOutput) render(resultFrom(window.openai.toolOutput));
+            renderChatGptGlobals(window.openai);
           </script>
         </body>
         </html>

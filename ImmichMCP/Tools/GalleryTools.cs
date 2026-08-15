@@ -10,7 +10,7 @@ namespace ImmichMCP.Tools;
 [McpServerToolType]
 public static class GalleryTools
 {
-    public const string ResourceUri = "ui://immich/gallery-v3.html";
+    public const string ResourceUri = "ui://immich/gallery-v4.html";
     private const int MaxAssets = 8;
 
     [McpServerTool(
@@ -20,7 +20,7 @@ public static class GalleryTools
         OpenWorld = false,
         UseStructuredContent = true,
         OutputSchemaType = typeof(GalleryOutput))]
-    [McpMeta("ui", JsonValue = """{"resourceUri":"ui://immich/gallery-v3.html"}""")]
+    [McpMeta("ui", JsonValue = """{"resourceUri":"ui://immich/gallery-v4.html"}""")]
     [McpMeta("openai/outputTemplate", ResourceUri)]
     [McpMeta("openai/toolInvocation/invoking", "Preparing the photo gallery…")]
     [McpMeta("openai/toolInvocation/invoked", "Photo gallery ready")]

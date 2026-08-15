@@ -67,9 +67,12 @@ public class GalleryToolsTests
         var resource = GalleryResource.GetGallery().Should().BeOfType<TextResourceContents>().Subject;
 
         // Assert
-        resource.Uri.Should().Be("ui://immich/gallery-v3.html");
+        resource.Uri.Should().Be("ui://immich/gallery-v4.html");
         resource.MimeType.Should().Be("text/html;profile=mcp-app");
         resource.Text.Should().Contain("ui/notifications/tool-result");
+        resource.Text.Should().Contain("openai:set_globals");
+        resource.Text.Should().Contain("toolResponseMetadata");
+        resource.Text.Should().Contain("mcp_tool_result");
         resource.Text.Should().Contain("result?.structuredContent");
         resource.Text.Should().Contain("result?.content");
     }
