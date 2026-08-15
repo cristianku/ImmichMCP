@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Fetch a thumbnail only for internal model inspection. NEVER use this tool when the user asks to see, show, browse, inspect, or visualize photos: it does not display a photo to the user and must not be saved to a sandbox. For visible photos, use immich_assets_show instead.")]
+    [Description("Preferred tool for showing a photo as a native image in clients with a writable execution workspace. With DOWNLOAD_MODE=base64 it returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Do not stop at the technical tool output. If the host cannot create local files, use immich_assets_show as fallback.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,

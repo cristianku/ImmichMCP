@@ -17,7 +17,7 @@ public static class GalleryTools
 
     [McpServerTool(
         Name = "immich_assets_show",
-        Title = "Display Immich photos in ChatGPT",
+        Title = "Fallback Immich photo gallery",
         ReadOnly = true,
         OpenWorld = false,
         UseStructuredContent = true,
@@ -26,7 +26,7 @@ public static class GalleryTools
     [McpMeta("openai/outputTemplate", ResourceUri)]
     [McpMeta("openai/toolInvocation/invoking", "Preparing the photo gallery…")]
     [McpMeta("openai/toolInvocation/invoked", "Photo gallery ready")]
-    [Description("The only Immich tool that displays photos visibly to the user in ChatGPT. REQUIRED final step whenever the user asks to see, show, display, browse, or find photos. First obtain the final asset IDs with search/list/people tools, then pass those IDs here newest first. Do not finish with immich_assets_download_thumbnail, filenames, or metadata because those do not display photos to the user.")]
+    [Description("Fallback inline gallery for hosts that cannot materialize an image content block as a local file and embed it natively in the final answer. Prefer immich_assets_download_thumbnail when the host has a writable execution workspace. Pass final asset IDs here newest first only when native file embedding is unavailable.")]
     public static async Task<CallToolResult> ShowGallery(
         ImmichClient client,
         [Description("Final Immich asset IDs to display, ordered as they should appear (maximum 8)")] string[] assetIds,
