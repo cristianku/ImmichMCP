@@ -45,7 +45,8 @@ Pass the final UUID:
 
 With `DOWNLOAD_MODE=base64`, the text result contains:
 
-- `result.data`: a compact model-readable Base64 thumbnail;
+- `result.data`: an optimized model-readable Base64 JPEG (up to 1024 px on
+  the long edge at quality 80);
 - `result.mime_type`: the preview's actual MIME type;
 - `result.captured_at`, `result.location`, and any available GPS metadata;
 - an additional, larger MCP preview image block for compatibility.

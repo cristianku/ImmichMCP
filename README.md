@@ -129,9 +129,10 @@ smart, people, or metadata search, use `immich_assets_download_thumbnail` for ea
 It returns the selected preview as a standard MCP image content block together with the capture
 date, best available location, and GPS coordinates. Clients should print a concise location/date
 caption immediately below each embedded photo and must not infer missing metadata. In `base64`
-mode, a compact thumbnail is also available as model-readable text in `result.data`, while the MCP
-image block keeps the larger preview. This lets clients whose MCP host hides raw image-block bytes
-materialize a local file without sending an oversized Base64 text field.
+mode, an optimized JPEG (up to 1024 px on the long edge at quality 80) is also available as
+model-readable text in `result.data`, while the MCP image block keeps the larger preview. This lets
+clients whose MCP host hides raw image-block bytes materialize a clear local image without sending
+the oversized original preview as a Base64 text field.
 
 ## Claude Desktop Configuration
 

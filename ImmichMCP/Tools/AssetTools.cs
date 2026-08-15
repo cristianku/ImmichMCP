@@ -7,6 +7,7 @@ using ImmichMCP.Models.Common;
 using ImmichMCP.Models.Assets;
 using ImmichMCP.Models.Albums;
 using ImmichMCP.Models.SharedLinks;
+using ImmichMCP.Utils;
 using static ImmichMCP.Utils.ParsingHelpers;
 
 namespace ImmichMCP.Tools;
@@ -265,7 +266,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64, result.data contains a compact model-readable Base64 thumbnail while the MCP image block contains the larger preview. Decode result.data into a local file using result.mime_type, then embed that sandbox file in the final answer. The technical tool preview alone is not sufficient. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
+    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64, result.data contains an optimized 1024px, quality-80 model-readable JPEG while the MCP image block contains the larger preview. Decode result.data into a local file using result.mime_type, then embed that sandbox file in the final answer. The technical tool preview alone is not sufficient. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -307,10 +308,27 @@ public static class AssetTools
         string previewMimeType;
         byte[] modelBytes;
         string modelMimeType;
+        int? modelWidth = null;
+        int? modelHeight = null;
+        int? modelQuality = null;
         try
         {
             (previewBytes, previewMimeType) = await client.DownloadAssetThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
-            (modelBytes, modelMimeType) = await client.DownloadAssetModelThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
+
+            try
+            {
+                var optimized = ModelImageOptimizer.Create(previewBytes);
+                modelBytes = optimized.Bytes;
+                modelMimeType = optimized.MimeType;
+                modelWidth = optimized.Width;
+                modelHeight = optimized.Height;
+                modelQuality = optimized.Quality;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                // Keep uncommon or malformed formats usable instead of failing the tool.
+                (modelBytes, modelMimeType) = await client.DownloadAssetModelThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
+            }
         }
         catch (InlineDownloadTooLargeException ex)
         {
@@ -325,6 +343,9 @@ public static class AssetTools
                 original_file_name = asset.OriginalFileName,
                 mime_type = modelMimeType,
                 file_size = modelBytes.Length,
+                width = modelWidth,
+                height = modelHeight,
+                jpeg_quality = modelQuality,
                 preview_mime_type = previewMimeType,
                 preview_file_size = previewBytes.Length,
                 encoding = "base64",

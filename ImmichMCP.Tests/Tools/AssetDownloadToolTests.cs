@@ -7,6 +7,9 @@ using ImmichMCP.Client;
 using ImmichMCP.Models.Assets;
 using ImmichMCP.Tests.Fixtures;
 using ImmichMCP.Tools;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace ImmichMCP.Tests.Tools;
 
@@ -31,6 +34,14 @@ public class AssetDownloadToolTests
     private static byte[] DecodeBase64Payload(IEnumerable<byte> payload) =>
         Convert.FromBase64String(System.Text.Encoding.ASCII.GetString(payload.ToArray()));
 
+    private static byte[] CreateJpeg(int width, int height)
+    {
+        using var image = new Image<Rgb24>(width, height, new Rgb24(20, 110, 210));
+        using var output = new MemoryStream();
+        image.SaveAsJpeg(output, new JpegEncoder { Quality = 95 });
+        return output.ToArray();
+    }
+
     [Fact]
     public async Task DownloadThumbnail_ReturnsInlineImage_WhenBase64Mode()
     {
@@ -50,14 +61,10 @@ public class AssetDownloadToolTests
             }
         };
         MockAssetGet(handler, asset: asset);
-        var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03 };
-        var modelBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0x01 };
+        var imageBytes = CreateJpeg(1600, 1200);
         handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
             .WithQueryString("size", "preview")
             .Respond("image/jpeg", new MemoryStream(imageBytes));
-        handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
-            .WithQueryString("size", "thumbnail")
-            .Respond("image/jpeg", new MemoryStream(modelBytes));
 
         // Act
         var result = await AssetTools.DownloadThumbnail(client, AssetId);
@@ -67,8 +74,12 @@ public class AssetDownloadToolTests
         json.RootElement.GetProperty("ok").GetBoolean().Should().BeTrue();
         var response = json.RootElement.GetProperty("result");
         response.GetProperty("encoding").GetString().Should().Be("base64");
-        Convert.FromBase64String(response.GetProperty("data").GetString()!).Should().Equal(modelBytes);
+        var modelBytes = Convert.FromBase64String(response.GetProperty("data").GetString()!);
+        response.GetProperty("mime_type").GetString().Should().Be("image/jpeg");
         response.GetProperty("file_size").GetInt32().Should().Be(modelBytes.Length);
+        response.GetProperty("width").GetInt32().Should().Be(1024);
+        response.GetProperty("height").GetInt32().Should().Be(768);
+        response.GetProperty("jpeg_quality").GetInt32().Should().Be(80);
         response.GetProperty("preview_file_size").GetInt32().Should().Be(imageBytes.Length);
         response.GetProperty("next_action").GetString().Should().Contain("Decode result.data");
         response.GetProperty("captured_at").GetDateTime().Should().Be(capturedAt);
@@ -82,6 +93,39 @@ public class AssetDownloadToolTests
         var image = result.Content.OfType<ImageContentBlock>().Should().ContainSingle().Subject;
         image.MimeType.Should().Be("image/jpeg");
         DecodeBase64Payload(image.Data.ToArray()).Should().Equal(imageBytes);
+
+        using var optimized = Image.Load(modelBytes);
+        optimized.Width.Should().Be(1024);
+        optimized.Height.Should().Be(768);
+    }
+
+    [Fact]
+    public async Task DownloadThumbnail_FallsBackToImmichThumbnail_WhenPreviewCannotBeDecoded()
+    {
+        // Arrange
+        var (client, handler) = MockHttpClientFactory.CreateMockClient(downloadMode: "base64");
+        MockAssetGet(handler);
+        var invalidPreview = new byte[] { 0x01, 0x02, 0x03 };
+        var fallbackBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0x01 };
+        handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
+            .WithQueryString("size", "preview")
+            .Respond("image/jpeg", new MemoryStream(invalidPreview));
+        handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
+            .WithQueryString("size", "thumbnail")
+            .Respond("image/jpeg", new MemoryStream(fallbackBytes));
+
+        // Act
+        var result = await AssetTools.DownloadThumbnail(client, AssetId);
+
+        // Assert
+        using var json = ParseEnvelope(result);
+        var response = json.RootElement.GetProperty("result");
+        Convert.FromBase64String(response.GetProperty("data").GetString()!).Should().Equal(fallbackBytes);
+        response.GetProperty("width").ValueKind.Should().Be(JsonValueKind.Null);
+        response.GetProperty("height").ValueKind.Should().Be(JsonValueKind.Null);
+        response.GetProperty("jpeg_quality").ValueKind.Should().Be(JsonValueKind.Null);
+        DecodeBase64Payload(result.Content.OfType<ImageContentBlock>().Single().Data.ToArray())
+            .Should().Equal(invalidPreview);
     }
 
     [Fact]
