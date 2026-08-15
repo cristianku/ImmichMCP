@@ -20,7 +20,6 @@ public class ImmichToolGatewayTests
             "activities",
             "albums",
             "assets",
-            "gallery",
             "health",
             "people",
             "search",

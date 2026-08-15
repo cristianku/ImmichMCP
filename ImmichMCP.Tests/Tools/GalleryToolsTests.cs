@@ -40,7 +40,8 @@ public class GalleryToolsTests
         result.Meta.Should().BeNull();
         var image = result.Content.OfType<ImageContentBlock>().Should().ContainSingle().Subject;
         image.MimeType.Should().Be("image/jpeg");
-        image.Data.Should().Equal(imageBytes);
+        Convert.FromBase64String(System.Text.Encoding.ASCII.GetString(image.Data.ToArray()))
+            .Should().Equal(imageBytes);
     }
 
     [Fact]
