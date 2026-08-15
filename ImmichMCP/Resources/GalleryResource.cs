@@ -19,12 +19,38 @@ public static class GalleryResource
         Uri = Tools.GalleryTools.ResourceUri,
         MimeType = "text/html;profile=mcp-app",
         Text = GalleryHtml,
-        Meta = new JsonObject
+        Meta = GalleryMeta()
+    };
+
+    // These aliases prevent cached ChatGPT tool descriptors from failing while
+    // the host refreshes from the current v4 resource URI.
+    [McpServerResource(
+        UriTemplate = Tools.GalleryTools.LegacyResourceUriV2,
+        Name = "Legacy Immich photo gallery v2",
+        Title = "Immich photo gallery",
+        MimeType = "text/html;profile=mcp-app")]
+    public static ResourceContents GetLegacyGalleryV2() => CreateGallery(Tools.GalleryTools.LegacyResourceUriV2);
+
+    [McpServerResource(
+        UriTemplate = Tools.GalleryTools.LegacyResourceUriV3,
+        Name = "Legacy Immich photo gallery v3",
+        Title = "Immich photo gallery",
+        MimeType = "text/html;profile=mcp-app")]
+    public static ResourceContents GetLegacyGalleryV3() => CreateGallery(Tools.GalleryTools.LegacyResourceUriV3);
+
+    private static ResourceContents CreateGallery(string uri) => new TextResourceContents
+    {
+        Uri = uri,
+        MimeType = "text/html;profile=mcp-app",
+        Text = GalleryHtml,
+        Meta = GalleryMeta()
+    };
+
+    private static JsonObject GalleryMeta() => new()
+    {
+        ["ui"] = new JsonObject
         {
-            ["ui"] = new JsonObject
-            {
-                ["prefersBorder"] = true
-            }
+            ["prefersBorder"] = true
         }
     };
 

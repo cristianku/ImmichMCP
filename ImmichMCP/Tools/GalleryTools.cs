@@ -11,6 +11,8 @@ namespace ImmichMCP.Tools;
 public static class GalleryTools
 {
     public const string ResourceUri = "ui://immich/gallery-v4.html";
+    public const string LegacyResourceUriV2 = "ui://immich/gallery-v2.html";
+    public const string LegacyResourceUriV3 = "ui://immich/gallery-v3.html";
     private const int MaxAssets = 8;
 
     [McpServerTool(
@@ -107,6 +109,27 @@ public static class GalleryTools
             Content = content
         };
     }
+
+    // ChatGPT may retain tool descriptors and UI resource URIs from an existing
+    // connection. Keep this alias until those cached connections have expired.
+    [McpServerTool(
+        Name = "immich_gallery_show",
+        Title = "Legacy Immich photo gallery",
+        ReadOnly = true,
+        OpenWorld = false,
+        UseStructuredContent = true,
+        OutputSchemaType = typeof(GalleryOutput))]
+    [McpMeta("ui", JsonValue = """{"resourceUri":"ui://immich/gallery-v2.html","visibility":["app"]}""")]
+    [McpMeta("openai/outputTemplate", LegacyResourceUriV2)]
+    [McpMeta("openai/toolInvocation/invoking", "Preparing the photo gallery…")]
+    [McpMeta("openai/toolInvocation/invoked", "Photo gallery ready")]
+    [Description("Legacy compatibility alias for cached ChatGPT connections. Use immich_assets_show for new integrations.")]
+    public static Task<CallToolResult> ShowLegacyGallery(
+        ImmichClient client,
+        [Description("Final Immich asset IDs to display, ordered as they should appear (maximum 8)")] string[] assetIds,
+        [Description("Short user-facing gallery title in the user's language")] string? title = null,
+        CancellationToken cancellationToken = default) =>
+        ShowGallery(client, assetIds, title, cancellationToken);
 
     private static CallToolResult Error(string message) => new()
     {

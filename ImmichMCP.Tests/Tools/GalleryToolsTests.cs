@@ -76,4 +76,19 @@ public class GalleryToolsTests
         resource.Text.Should().Contain("result?.structuredContent");
         resource.Text.Should().Contain("result?.content");
     }
+
+    [Theory]
+    [InlineData("ui://immich/gallery-v2.html")]
+    [InlineData("ui://immich/gallery-v3.html")]
+    public void GalleryResource_LegacyUrisServeTheCurrentMcpAppTemplate(string uri)
+    {
+        var resource = uri.EndsWith("v2.html", StringComparison.Ordinal)
+            ? GalleryResource.GetLegacyGalleryV2()
+            : GalleryResource.GetLegacyGalleryV3();
+
+        var textResource = resource.Should().BeOfType<TextResourceContents>().Subject;
+        textResource.Uri.Should().Be(uri);
+        textResource.MimeType.Should().Be("text/html;profile=mcp-app");
+        textResource.Text.Should().Contain("openai:set_globals");
+    }
 }
