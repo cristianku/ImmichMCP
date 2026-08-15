@@ -340,6 +340,12 @@ public class ImmichClient
         => await DownloadBytesAsync($"api/assets/{id}/thumbnail?size=preview", cancellationToken).ConfigureAwait(false);
 
     /// <summary>
+    /// Downloads the compact thumbnail bytes intended for model-readable Base64 output.
+    /// </summary>
+    public async Task<(byte[] Bytes, string MimeType)> DownloadAssetModelThumbnailAsync(string id, CancellationToken cancellationToken = default)
+        => await DownloadBytesAsync($"api/assets/{id}/thumbnail?size=thumbnail", cancellationToken).ConfigureAwait(false);
+
+    /// <summary>
     /// Downloads the original file bytes for an asset.
     /// </summary>
     public async Task<(byte[] Bytes, string MimeType)> DownloadAssetOriginalAsync(string id, CancellationToken cancellationToken = default)

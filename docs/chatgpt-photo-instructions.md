@@ -45,10 +45,10 @@ Pass the final UUID:
 
 With `DOWNLOAD_MODE=base64`, the text result contains:
 
-- `result.data`: the model-readable Base64 preview;
+- `result.data`: a compact model-readable Base64 thumbnail;
 - `result.mime_type`: the preview's actual MIME type;
 - `result.captured_at`, `result.location`, and any available GPS metadata;
-- an additional MCP image block for compatibility.
+- an additional, larger MCP preview image block for compatibility.
 
 Use `result.data` to create the final file. An image shown only inside the
 technical tool result does not count as a photo displayed in the final answer.

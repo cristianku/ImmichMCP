@@ -51,9 +51,13 @@ public class AssetDownloadToolTests
         };
         MockAssetGet(handler, asset: asset);
         var imageBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02, 0x03 };
+        var modelBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0x01 };
         handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
             .WithQueryString("size", "preview")
             .Respond("image/jpeg", new MemoryStream(imageBytes));
+        handler.When(HttpMethod.Get, $"*/assets/{AssetId}/thumbnail")
+            .WithQueryString("size", "thumbnail")
+            .Respond("image/jpeg", new MemoryStream(modelBytes));
 
         // Act
         var result = await AssetTools.DownloadThumbnail(client, AssetId);
@@ -63,7 +67,9 @@ public class AssetDownloadToolTests
         json.RootElement.GetProperty("ok").GetBoolean().Should().BeTrue();
         var response = json.RootElement.GetProperty("result");
         response.GetProperty("encoding").GetString().Should().Be("base64");
-        Convert.FromBase64String(response.GetProperty("data").GetString()!).Should().Equal(imageBytes);
+        Convert.FromBase64String(response.GetProperty("data").GetString()!).Should().Equal(modelBytes);
+        response.GetProperty("file_size").GetInt32().Should().Be(modelBytes.Length);
+        response.GetProperty("preview_file_size").GetInt32().Should().Be(imageBytes.Length);
         response.GetProperty("next_action").GetString().Should().Contain("Decode result.data");
         response.GetProperty("captured_at").GetDateTime().Should().Be(capturedAt);
         response.GetProperty("location").GetString().Should().Be("Densbüren, Aargau, Switzerland");

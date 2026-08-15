@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64, result.data contains the model-readable Base64 preview and the MCP response also contains an inline image block. Decode result.data into a local file using result.mime_type, then embed that sandbox file in the final answer. The technical tool preview alone is not sufficient. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
+    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64, result.data contains a compact model-readable Base64 thumbnail while the MCP image block contains the larger preview. Decode result.data into a local file using result.mime_type, then embed that sandbox file in the final answer. The technical tool preview alone is not sufficient. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -303,25 +303,30 @@ public static class AssetTools
             return TextResult(JsonSerializer.Serialize(urlResponse));
         }
 
-        byte[] bytes;
-        string mimeType;
+        byte[] previewBytes;
+        string previewMimeType;
+        byte[] modelBytes;
+        string modelMimeType;
         try
         {
-            (bytes, mimeType) = await client.DownloadAssetThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
+            (previewBytes, previewMimeType) = await client.DownloadAssetThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
+            (modelBytes, modelMimeType) = await client.DownloadAssetModelThumbnailAsync(id, cancellationToken).ConfigureAwait(false);
         }
         catch (InlineDownloadTooLargeException ex)
         {
             return TooLargeResult(id, ex, downloadInfo.PreviewUrl, client);
         }
 
-        var base64Data = Convert.ToBase64String(bytes);
+        var base64Data = Convert.ToBase64String(modelBytes);
         var response = McpResponse<object>.Success(
             new
             {
                 id,
                 original_file_name = asset.OriginalFileName,
-                mime_type = mimeType,
-                file_size = bytes.Length,
+                mime_type = modelMimeType,
+                file_size = modelBytes.Length,
+                preview_mime_type = previewMimeType,
+                preview_file_size = previewBytes.Length,
                 encoding = "base64",
                 data = base64Data,
                 next_action = "Decode result.data into a local image file using result.mime_type, then embed that file in the final answer. Do not treat the technical tool preview as the final displayed photo.",
@@ -336,7 +341,7 @@ public static class AssetTools
             },
             new McpMeta { ImmichBaseUrl = client.BaseUrl }
         );
-        return BinaryResult(JsonSerializer.Serialize(response), bytes, mimeType, downloadInfo.PreviewUrl);
+        return BinaryResult(JsonSerializer.Serialize(response), previewBytes, previewMimeType, downloadInfo.PreviewUrl);
     }
 
     private static bool IsBase64Mode(ImmichClient client) =>
