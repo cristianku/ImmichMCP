@@ -63,6 +63,8 @@ public class AssetDownloadToolTests
         json.RootElement.GetProperty("ok").GetBoolean().Should().BeTrue();
         var response = json.RootElement.GetProperty("result");
         response.GetProperty("encoding").GetString().Should().Be("base64");
+        Convert.FromBase64String(response.GetProperty("data").GetString()!).Should().Equal(imageBytes);
+        response.GetProperty("next_action").GetString().Should().Contain("Decode result.data");
         response.GetProperty("captured_at").GetDateTime().Should().Be(capturedAt);
         response.GetProperty("location").GetString().Should().Be("Densbüren, Aargau, Switzerland");
         response.GetProperty("city").GetString().Should().Be("Densbüren");

@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64 it also returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
+    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. It returns captured_at, location, and GPS metadata when available. With DOWNLOAD_MODE=base64, result.data contains the model-readable Base64 preview and the MCP response also contains an inline image block. Decode result.data into a local file using result.mime_type, then embed that sandbox file in the final answer. The technical tool preview alone is not sufficient. Immediately below every embedded photo, print a concise caption using the returned location and captured_at values. Omit unavailable values and never infer them. Do not stop at filenames, metadata, or the technical tool output.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -314,6 +314,7 @@ public static class AssetTools
             return TooLargeResult(id, ex, downloadInfo.PreviewUrl, client);
         }
 
+        var base64Data = Convert.ToBase64String(bytes);
         var response = McpResponse<object>.Success(
             new
             {
@@ -322,6 +323,8 @@ public static class AssetTools
                 mime_type = mimeType,
                 file_size = bytes.Length,
                 encoding = "base64",
+                data = base64Data,
+                next_action = "Decode result.data into a local image file using result.mime_type, then embed that file in the final answer. Do not treat the technical tool preview as the final displayed photo.",
                 thumbhash = asset.Thumbhash,
                 captured_at = asset.ExifInfo?.DateTimeOriginal ?? asset.LocalDateTime,
                 location = FormatLocation(asset.ExifInfo),

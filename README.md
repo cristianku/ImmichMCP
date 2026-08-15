@@ -128,7 +128,9 @@ For a ChatGPT connection, use `IMMICH_TOOL_MODE=static` and `DOWNLOAD_MODE=base6
 smart, people, or metadata search, use `immich_assets_download_thumbnail` for each final asset.
 It returns the selected preview as a standard MCP image content block together with the capture
 date, best available location, and GPS coordinates. Clients should print a concise location/date
-caption immediately below each embedded photo and must not infer missing metadata.
+caption immediately below each embedded photo and must not infer missing metadata. In `base64`
+mode, the same preview is also available as model-readable text in `result.data`, so clients whose
+MCP host hides raw image-block bytes can materialize a local file and embed it in the final answer.
 
 ## Claude Desktop Configuration
 
