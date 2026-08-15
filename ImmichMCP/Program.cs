@@ -28,8 +28,7 @@ if (useStdio)
     builder.Services
         .AddMcpServer(options => ConfigureMcpCapabilities(options, builder.Configuration))
         .WithStdioServerTransport()
-        .ConfigureTools(UseToolGateway(builder.Configuration))
-        .WithResourcesFromAssembly();
+        .ConfigureTools(UseToolGateway(builder.Configuration));
 
     await builder.Build().RunAsync();
 }
@@ -43,8 +42,7 @@ else
     builder.Services
         .AddMcpServer(options => ConfigureMcpCapabilities(options, builder.Configuration))
         .WithHttpTransport()
-        .ConfigureTools(UseToolGateway(builder.Configuration))
-        .WithResourcesFromAssembly();
+        .ConfigureTools(UseToolGateway(builder.Configuration));
 
     var app = builder.Build();
 
@@ -248,7 +246,7 @@ bool UseToolGateway(IConfiguration configuration)
 void ConfigureMcpCapabilities(McpServerOptions options, IConfiguration configuration)
 {
     options.ServerInstructions = """
-        ImmichMCP searches and manages the user's private Immich library. For photo requests, first use the appropriate search, people, or asset tool to identify matching asset IDs and sort the final matches newest first. When the user asks to see or display photos, prefer immich_assets_download_thumbnail for each final asset. It returns an inline image content block when DOWNLOAD_MODE=base64. If the host provides a writable execution workspace, materialize that Base64 image as a local file using the extension indicated by mimeType and embed the resulting sandbox file in the final answer so the user sees a native image, not merely a tool result. Never claim the photo is shown unless it is actually embedded in the final answer. Use immich_assets_show only as a fallback when the host cannot create and embed local image files. Never use immich_assets_download_original for previews. Do not answer a request to see photos with filenames or metadata alone.
+        ImmichMCP searches and manages the user's private Immich library. For photo requests, first use the appropriate search, people, or asset tool to identify matching asset IDs and sort the final matches newest first. When the user asks to see, show, display, browse, inspect, or visualize photos, call immich_assets_download_thumbnail for each final asset. With DOWNLOAD_MODE=base64 it returns an inline image content block. If the host provides a writable execution workspace, materialize that image as a local file using the extension indicated by mimeType and embed the resulting sandbox file in the final answer. Never use immich_assets_download_original for previews. Never answer a request to see photos with filenames or metadata alone, and never claim a photo is shown unless it is actually embedded in the final answer.
         """;
 
     if (!UseToolGateway(configuration))

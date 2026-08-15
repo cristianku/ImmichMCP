@@ -10,7 +10,7 @@ using ImmichMCP.Tools;
 namespace ImmichMCP.Tests.Integration;
 
 /// <summary>
-/// Exercises every one of the 51 MCP tools against a LIVE Immich instance.
+/// Exercises every one of the 49 MCP tools against a LIVE Immich instance.
 ///
 /// SAFETY CONTRACT (do not weaken): this test never creates, mutates, or deletes any
 /// pre-existing library data. Every mutation runs on throwaway fixtures created by the
@@ -36,7 +36,6 @@ public class ToolCoverageIntegrationTests
     {
         "immich_ping", "immich_capabilities",
         "immich_search_metadata", "immich_search_smart", "immich_search_ocr", "immich_search_explore",
-        "immich_assets_show", "immich_gallery_show",
         "immich_assets_statistics", "immich_assets_list", "immich_assets_get", "immich_assets_exif",
         "immich_assets_download_original", "immich_assets_download_thumbnail", "immich_assets_upload",
         "immich_assets_upload_from_path", "immich_assets_upload_init", "immich_assets_upload_status",
@@ -54,7 +53,7 @@ public class ToolCoverageIntegrationTests
     [MutationIntegrationFact]
     public async Task AllTools_ExercisedSafely_AgainstLiveImmich()
     {
-        AllToolNames.Should().HaveCount(51, "the fixed tool list must cover all 51 tools");
+        AllToolNames.Should().HaveCount(49, "the fixed tool list must cover all 49 tools");
 
         var settings = IntegrationTestSettings.Load();
         var client = settings.CreateClient();
@@ -245,38 +244,6 @@ public class ToolCoverageIntegrationTests
                 await Ok("immich_assets_exif", () => AssetTools.GetExif(client, asset1));
                 await Ok("immich_assets_download_original", async () => FirstText(await AssetTools.DownloadOriginal(client, asset1)));
                 await Ok("immich_assets_download_thumbnail", async () => FirstText(await AssetTools.DownloadThumbnail(client, asset1)));
-                try
-                {
-                    var gallery = await GalleryTools.ShowGallery(client, [asset1], "Integration test gallery");
-                    if (gallery.IsError == true || gallery.StructuredContent?.GetProperty("images").GetArrayLength() != 1)
-                    {
-                        Set("immich_assets_show", "FAIL", "gallery did not return the uploaded fixture preview");
-                    }
-                    else
-                    {
-                        Set("immich_assets_show", "PASS", null);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Set("immich_assets_show", "FAIL", Trunc(ex.Message));
-                }
-                try
-                {
-                    var legacyGallery = await GalleryTools.ShowLegacyGallery(client, [asset1], "Legacy integration test gallery");
-                    if (legacyGallery.IsError == true || legacyGallery.StructuredContent?.GetProperty("images").GetArrayLength() != 1)
-                    {
-                        Set("immich_gallery_show", "FAIL", "legacy gallery did not return the uploaded fixture preview");
-                    }
-                    else
-                    {
-                        Set("immich_gallery_show", "PASS", null);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Set("immich_gallery_show", "FAIL", Trunc(ex.Message));
-                }
                 await Ok("immich_assets_update", () => AssetTools.Update(client, asset1, isFavorite: true, description: "mcp tool test"));
                 await Ok("immich_assets_bulk_update", () => AssetTools.BulkUpdate(client, asset1, isFavorite: false, dryRun: false, confirm: true));
             }
@@ -385,6 +352,6 @@ public class ToolCoverageIntegrationTests
         var notPassing = status.Where(kv => kv.Value.Item1 != "PASS").Select(kv => kv.Key).ToList();
 
         notPassing.Should().BeEmpty(
-            $"every tool must PASS. {pass}/51 passed.\n{report}");
+            $"every tool must PASS. {pass}/49 passed.\n{report}");
     }
 }

@@ -208,7 +208,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_original")]
-    [Description("Export an original asset file for an external client. NEVER use this tool when the user asks to see, show, browse, inspect, or visualize photos: ChatGPT cannot save it to a sandbox or display it through this download. For visible photos, use immich_assets_show instead.")]
+    [Description("Export an original asset file for an external client. NEVER use this tool when the user asks to see, show, browse, inspect, or visualize photos. For visible photos, use immich_assets_download_thumbnail instead.")]
     public static async Task<CallToolResult> DownloadOriginal(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Preferred tool for showing a photo as a native image in clients with a writable execution workspace. With DOWNLOAD_MODE=base64 it returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Do not stop at the technical tool output. If the host cannot create local files, use immich_assets_show as fallback.")]
+    [Description("Use this tool whenever the user asks to see, show, browse, inspect, or visualize a photo. With DOWNLOAD_MODE=base64 it returns an inline image block: materialize that block as a local image file using mimeType, then embed the sandbox file in the final answer. Do not stop at filenames, metadata, or the technical tool output.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,

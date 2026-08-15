@@ -52,4 +52,4 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.description=Immich MCP server with a ChatGPT photo gallery
+            org.opencontainers.image.description=Model Context Protocol server for Immich

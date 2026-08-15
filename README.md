@@ -7,7 +7,6 @@ A Model Context Protocol (MCP) server for [Immich](https://immich.app/) - the se
 - **Asset Management**: Search, browse, upload, update, and delete photos/videos
 - **Direct Local Upload**: Authorize a short-lived, upload-only URL and stream a local folder straight to Immich — no API key exposed, nothing to install beyond `curl`, resumable by content dedup
 - **Smart Search**: ML-powered semantic search using CLIP (e.g., "sunset at the beach")
-- **ChatGPT Photo Gallery**: Show the final smart-search matches as private, inline thumbnail previews in ChatGPT
 - **Metadata Search**: Filter by date, location, camera, people, and more
 - **Albums**: Create, manage, and share photo albums
 - **People**: View and manage face recognition clusters
@@ -37,7 +36,7 @@ dotnet test ImmichMCP.Tests/ImmichMCP.Tests.csproj --filter "Category=Integratio
 ```
 
 Mutation coverage (create/update/delete paths) is disabled by default. Enable it explicitly
-to also run the full 50-tool smoke:
+to also run the full 49-tool smoke:
 
 ```bash
 export IMMICH_INTEGRATION_MUTATION_TESTS=true
@@ -47,7 +46,7 @@ dotnet test ImmichMCP.Tests/ImmichMCP.Tests.csproj --filter "Category=Integratio
 (If your Immich runs somewhere not directly reachable, point `IMMICH_BASE_URL` at it however
 you normally reach it — e.g. a port-forward or tunnel — before running the tests.)
 
-With mutation coverage enabled, `ToolCoverageIntegrationTests` exercises **all 50 tools**
+With mutation coverage enabled, `ToolCoverageIntegrationTests` exercises **all 49 tools**
 against the live server. It is strictly non-destructive to existing data: every mutation
 runs on throwaway fixtures the test creates (uploaded PNGs, an album, a tag, shared links,
 an activity) and teardown deletes only those; the two tools that would mutate real,
@@ -125,11 +124,9 @@ docker run -e IMMICH_BASE_URL="https://photos.example.com" \
 
 In `gateway` mode, `immich_tools_enable` emits the MCP `notifications/tools/list_changed` notification so clients can refresh the normal `tools/list` inventory after enabling a category or tool.
 
-For a ChatGPT connection, use `IMMICH_TOOL_MODE=static`. The `immich_assets_show` tool is a
-read-only render step: first run `immich_search_smart` (or a people/metadata search), then pass
-the final asset IDs to the gallery. Immich performs the visual search; only the selected thumbnail
-previews are returned as MCP image blocks and rendered by the ChatGPT component. The structured
-result contains only lightweight IDs and metadata, not base64 image text.
+For a ChatGPT connection, use `IMMICH_TOOL_MODE=static` and `DOWNLOAD_MODE=base64`. After a
+smart, people, or metadata search, use `immich_assets_download_thumbnail` for each final asset.
+It returns the selected preview as a standard MCP image content block.
 
 ## Claude Desktop Configuration
 
@@ -184,7 +181,6 @@ Or with Docker:
 | `immich_assets_exif` | Get EXIF data for an asset |
 | `immich_assets_download_original` | Get download URL for original (or inline content with `DOWNLOAD_MODE=base64`) |
 | `immich_assets_download_thumbnail` | Get thumbnail/preview URLs (or inline preview image with `DOWNLOAD_MODE=base64`) |
-| `immich_assets_show` | Display up to 8 final selected assets as an inline ChatGPT photo gallery |
 | `immich_assets_upload` | Upload asset (base64) |
 | `immich_assets_upload_from_path` | Upload from local file path |
 | `immich_assets_upload_authorize` | Mint a short-lived, upload-only URL so a client can upload local files **directly** to Immich (no API key exposed) |
