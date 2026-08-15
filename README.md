@@ -7,6 +7,7 @@ A Model Context Protocol (MCP) server for [Immich](https://immich.app/) - the se
 - **Asset Management**: Search, browse, upload, update, and delete photos/videos
 - **Direct Local Upload**: Authorize a short-lived, upload-only URL and stream a local folder straight to Immich — no API key exposed, nothing to install beyond `curl`, resumable by content dedup
 - **Smart Search**: ML-powered semantic search using CLIP (e.g., "sunset at the beach")
+- **ChatGPT Photo Gallery**: Show the final smart-search matches as private, inline thumbnail previews in ChatGPT
 - **Metadata Search**: Filter by date, location, camera, people, and more
 - **Albums**: Create, manage, and share photo albums
 - **People**: View and manage face recognition clusters
@@ -55,15 +56,18 @@ IDs only and must refuse safely.
 
 ## Deployment
 
-ImmichMCP is published as a container image at `ghcr.io/barryw/immichmcp`. Run it wherever you
-host containers — Docker, Docker Compose, or Kubernetes.
+This fork publishes its container image at `ghcr.io/cristianku/immichmcp`. Run it wherever you
+host containers — Docker, Docker Compose, or TrueNAS SCALE.
 
 - Set `IMMICH_BASE_URL` and `IMMICH_API_KEY` (see [Environment Variables](#environment-variables)).
 - Expose the HTTP port (default `5000`). The MCP endpoint is served at `/mcp`. Two health
   endpoints are available: `/health` (liveness, use for restarts) and `/health/ready`
   (readiness, pings Immich and returns `503` if unreachable, use for traffic routing).
-- For remote/HTTP clients, set `IMMICH_TOOL_MODE=gateway` so clients enable tool categories on
-  demand instead of loading all tools up front.
+- For ChatGPT, set `IMMICH_TOOL_MODE=static` so ChatGPT receives the complete tool list when it
+  connects. `gateway` relies on a dynamic tool-list update that ChatGPT does not refresh reliably.
+- Pushes to `main` run the GitHub Actions workflow at
+  [`.github/workflows/docker-image.yml`](.github/workflows/docker-image.yml), which tests the
+  project and publishes `latest`, `main`, and an immutable `sha-...` image tag to GHCR.
 
 ### Docker Compose
 
@@ -103,7 +107,7 @@ dotnet run --project ImmichMCP
 docker run -e IMMICH_BASE_URL="https://photos.example.com" \
            -e IMMICH_API_KEY="your-api-key" \
            -p 5000:5000 \
-           ghcr.io/barryw/immichmcp:latest
+           ghcr.io/cristianku/immichmcp:latest
 ```
 
 ## Environment Variables
@@ -120,6 +124,12 @@ docker run -e IMMICH_BASE_URL="https://photos.example.com" \
 | `IMMICH_TOOL_MODE` | No | `static` | `static` exposes all tools; `gateway` exposes `immich_tools_list` and `immich_tools_enable` first |
 
 In `gateway` mode, `immich_tools_enable` emits the MCP `notifications/tools/list_changed` notification so clients can refresh the normal `tools/list` inventory after enabling a category or tool.
+
+For a ChatGPT connection, use `IMMICH_TOOL_MODE=static`. The `immich_gallery_show` tool is a
+read-only render step: first run `immich_search_smart` (or a people/metadata search), then pass
+the final asset IDs to the gallery. Immich performs the visual search; only the selected thumbnail
+previews are sent to the ChatGPT component for display. They are kept in the widget's private
+metadata rather than being sent to the model as base64 text.
 
 ## Claude Desktop Configuration
 
@@ -174,6 +184,7 @@ Or with Docker:
 | `immich_assets_exif` | Get EXIF data for an asset |
 | `immich_assets_download_original` | Get download URL for original (or inline content with `DOWNLOAD_MODE=base64`) |
 | `immich_assets_download_thumbnail` | Get thumbnail/preview URLs (or inline preview image with `DOWNLOAD_MODE=base64`) |
+| `immich_gallery_show` | Display up to 8 final selected assets as an inline ChatGPT photo gallery |
 | `immich_assets_upload` | Upload asset (base64) |
 | `immich_assets_upload_from_path` | Upload from local file path |
 | `immich_assets_upload_authorize` | Mint a short-lived, upload-only URL so a client can upload local files **directly** to Immich (no API key exposed) |

@@ -28,7 +28,8 @@ if (useStdio)
     builder.Services
         .AddMcpServer(options => ConfigureMcpCapabilities(options, builder.Configuration))
         .WithStdioServerTransport()
-        .ConfigureTools(UseToolGateway(builder.Configuration));
+        .ConfigureTools(UseToolGateway(builder.Configuration))
+        .WithResourcesFromAssembly();
 
     await builder.Build().RunAsync();
 }
@@ -42,7 +43,8 @@ else
     builder.Services
         .AddMcpServer(options => ConfigureMcpCapabilities(options, builder.Configuration))
         .WithHttpTransport()
-        .ConfigureTools(UseToolGateway(builder.Configuration));
+        .ConfigureTools(UseToolGateway(builder.Configuration))
+        .WithResourcesFromAssembly();
 
     var app = builder.Build();
 
@@ -245,6 +247,10 @@ bool UseToolGateway(IConfiguration configuration)
 
 void ConfigureMcpCapabilities(McpServerOptions options, IConfiguration configuration)
 {
+    options.ServerInstructions = """
+        ImmichMCP searches and manages the user's private Immich library. For photo requests, first use the appropriate search, people, or asset tool to identify matching asset IDs. When the user asks to see, show, browse, inspect, or find photos, always finish by calling immich_gallery_show with the final matching asset IDs, newest first. Do not answer a request to see photos with filenames or metadata alone. The gallery is read-only and displays private thumbnail previews.
+        """;
+
     if (!UseToolGateway(configuration))
     {
         return;
