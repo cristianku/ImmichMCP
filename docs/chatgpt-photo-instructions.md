@@ -1,134 +1,133 @@
-# Istruzioni ChatGPT per visualizzare foto dal plugin Foto (Immich)
+# ChatGPT instructions for displaying photos from the Foto plugin (Immich)
 
-Copia il testo seguente nelle istruzioni usate da ChatGPT per il connettore
-**Foto**.
+Copy the following text into the instructions used by ChatGPT for the **Foto**
+connector.
 
 ---
 
-Quando l'utente chiede di cercare e visualizzare una fotografia dal plugin
-**Foto**, applica obbligatoriamente questa procedura.
+Whenever the user asks to search for and display a photo from the **Foto**
+plugin, you must follow this procedure.
 
-## 1. Cercare la fotografia
+## 1. Find the photo
 
-Usa lo strumento Immich più adatto disponibile nel plugin Foto:
+Use the most appropriate Immich tool available in the Foto plugin:
 
-- ultimi elementi: `immich_assets_list`;
-- ricerca semantica: `immich_search_smart`;
-- ricerca tramite metadati: `immich_search_metadata`;
-- foto di una persona: usa gli strumenti persone e poi gli asset associati.
+- latest items: `immich_assets_list`;
+- semantic search: `immich_search_smart`;
+- metadata search: `immich_search_metadata`;
+- photos of a person: use the available people tools, then retrieve the assets
+  associated with that person.
 
-Considera soltanto gli elementi con `type === "IMAGE"`. Non presumere che il
-primo risultato sia il più pertinente o il più recente. Verifica la pertinenza,
-confronta `fileCreatedAt` e usa `localDateTime` per mostrare l'ora locale.
-Conserva l'UUID della fotografia scelta.
+Only consider items where `type === "IMAGE"`. Do not assume that the first
+result is the most relevant or the most recent. Verify relevance, compare
+`fileCreatedAt`, and use `localDateTime` when displaying the local time. Keep
+the UUID of the selected photo.
 
-Per una ricerca semantica usa descrizioni concrete, preferibilmente anche in
-inglese. Ispeziona al massimo tre anteprime candidate, salvo richiesta esplicita
-dell'utente, quindi seleziona il risultato definitivo.
+For semantic searches, use concrete descriptions, preferably in English.
+Inspect no more than three candidate previews unless the user explicitly asks
+for a broader comparison, then select the final result.
 
-## 2. Scaricare l'anteprima definitiva
+## 2. Download the final preview
 
-Per mostrare la fotografia usa sempre:
+Always use the following tool to display a photo:
 
 ```text
 immich_assets_download_thumbnail
 ```
 
-passando l'UUID definitivo:
+Pass the final UUID:
 
 ```json
 {
-  "id": "UUID_DELLA_FOTOGRAFIA"
+  "id": "PHOTO_UUID"
 }
 ```
 
-Con `DOWNLOAD_MODE=base64`, il risultato testuale contiene:
+With `DOWNLOAD_MODE=base64`, the text result contains:
 
-- `result.data`: anteprima Base64 leggibile dal modello;
-- `result.mime_type`: tipo reale dell'anteprima;
-- `result.captured_at`, `result.location` e gli eventuali dati GPS;
-- un blocco immagine MCP aggiuntivo per compatibilità.
+- `result.data`: the model-readable Base64 preview;
+- `result.mime_type`: the preview's actual MIME type;
+- `result.captured_at`, `result.location`, and any available GPS metadata;
+- an additional MCP image block for compatibility.
 
-Usa `result.data` per il file finale. L'immagine mostrata soltanto nel risultato
-tecnico dello strumento non conta come fotografia visualizzata nel messaggio
-finale.
+Use `result.data` to create the final file. An image shown only inside the
+technical tool result does not count as a photo displayed in the final answer.
 
-## 3. Materializzare l'immagine
+## 3. Materialize the image
 
-Decodifica `result.data` in una directory scrivibile del workspace. Scegli
-l'estensione da `result.mime_type`, non dal nome originale:
+Decode `result.data` into a writable directory in the workspace. Choose the
+file extension from `result.mime_type`, not from the original filename:
 
 - `image/jpeg` → `.jpg`;
 - `image/png` → `.png`;
 - `image/webp` → `.webp`.
 
-Un'anteprima JPEG di un originale HEIC deve quindi essere salvata come `.jpg`.
+A JPEG preview of an HEIC original must therefore be saved as `.jpg`.
 
-Se la stringa Base64 supera il limite degli argomenti della shell, dividila in
-blocchi da 60.000 caratteri, dimensione divisibile per 4. Il primo blocco crea o
-sovrascrive il file; i successivi vengono aggiunti. Non hardcodare il percorso
-di una sessione precedente.
+If the Base64 string exceeds the shell argument limit, split it into chunks of
+60,000 characters. The chunk size must be divisible by 4. The first chunk must
+create or overwrite the file, and subsequent chunks must be appended. Do not
+hardcode a path from a previous session.
 
-## 4. Verificare il file
+## 4. Verify the file
 
-Prima di rispondere verifica che il file esista e sia un'immagine valida, per
-esempio con:
+Before answering, verify that the file exists and is a valid image, for example:
 
 ```sh
-file /PERCORSO_ASSOLUTO_DEL_WORKSPACE/immich-preview.jpg
+file /ABSOLUTE/WORKSPACE/PATH/immich-preview.jpg
 ```
 
-Se disponibile, usa anche `view_image` per verificare visivamente che sia la
-fotografia corretta.
+When available, also use `view_image` to verify visually that it is the correct
+photo.
 
-## 5. Visualizzare realmente la fotografia
+## 5. Actually display the photo
 
-Nel messaggio finale incorpora il file con un percorso `sandbox:` assoluto:
+Embed the file in the final answer using an absolute `sandbox:` path:
 
 ```markdown
-![Foto](sandbox:/PERCORSO_ASSOLUTO_DEL_WORKSPACE/immich-preview.jpg)
+![Photo](sandbox:/ABSOLUTE/WORKSPACE/PATH/immich-preview.jpg)
 ```
 
-Questa riga deve comparire nel messaggio finale, non soltanto nell'output di uno
-strumento o nel canale di avanzamento.
+This line must appear in the final answer, not only in tool output or a progress
+update.
 
-Subito sotto la fotografia inserisci una didascalia ricavata esclusivamente dai
-metadati restituiti dallo strumento:
+Immediately below the photo, add a concise caption using only the metadata
+returned by the tool:
 
 ```text
-📍 Densbüren, Aargau, Switzerland — 📅 15 agosto 2026, 17:57
+📍 Densbüren, Aargau, Switzerland — 📅 15 August 2026, 17:57
 ```
 
-Usa `location` quando presente; in alternativa componi la posizione con
-`city`, `state` e `country`. Usa `captured_at` per data e ora. Ometti la parte
-mancante e non inferire mai il luogo osservando la fotografia.
+Use `location` when available; otherwise compose the location from `city`,
+`state`, and `country`. Use `captured_at` for the date and time. Omit any
+unavailable part, and never infer the location by looking at the photo.
 
-## 6. Più fotografie
+## 6. Multiple photos
 
-Per più fotografie, ordina gli UUID dal più recente al più vecchio salvo diversa
-richiesta, chiama `immich_assets_download_thumbnail` per ciascun UUID definitivo,
-salva ogni immagine in un file distinto e inserisci sotto ciascuna la relativa
-didascalia.
+For multiple photos, order the UUIDs from newest to oldest unless the user asks
+otherwise. Call `immich_assets_download_thumbnail` for each final UUID, save
+each image to a separate file, and put the corresponding caption immediately
+below each photo.
 
-## Regola essenziale
+## Essential rule
 
-Non dire "ecco la foto" e non concludere la risposta finché il messaggio finale
-non contiene realmente l'immagine incorporata. Nomi file, UUID, URL interni,
-metadati e anteprime presenti soltanto nel risultato tecnico non sostituiscono
-l'immagine finale.
+Do not say "here is the photo" and do not finish the answer until the final
+message actually contains the embedded image. Filenames, UUIDs, internal URLs,
+metadata, and previews shown only in technical tool output do not replace the
+final image.
 
-Non chiamare `immich_assets_show`. Non usare
-`immich_assets_download_original` per le anteprime.
+Do not call `immich_assets_show`. Do not use
+`immich_assets_download_original` for previews.
 
-## Gestione degli errori
+## Error handling
 
-- Se la ricerca non trova risultati pertinenti, prova una formulazione semantica
-  alternativa prima di concludere che la foto non esiste.
-- Se il tool restituisce soltanto un URL interno `192.168.x.x`, non usarlo come
-  unico mezzo di visualizzazione.
-- Se `result.data` manca o non è Base64 valido, segnala che il server non ha
-  restituito dati materializzabili.
-- Se più foto sono state scattate nello stesso minuto, confronta anche i secondi
-  di `fileCreatedAt`.
-- Per i video usa gli strumenti e il formato appropriati invece di questa
-  procedura fotografica.
+- If the search does not return relevant results, try an alternative semantic
+  query before concluding that the photo does not exist.
+- If the tool returns only an internal `192.168.x.x` URL, do not use it as the
+  only way to display the photo.
+- If `result.data` is missing or is not valid Base64, report that the server did
+  not return materializable image data.
+- If several photos were taken during the same minute, compare the seconds in
+  `fileCreatedAt` as well.
+- For videos, use the appropriate tools and format instead of this photo
+  procedure.
