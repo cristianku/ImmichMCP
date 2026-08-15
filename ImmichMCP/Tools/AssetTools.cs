@@ -208,7 +208,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_original")]
-    [Description("Get the original asset file. Returns a download URL, or the file content inline when DOWNLOAD_MODE=base64.")]
+    [Description("Export an original asset file for an external client. NEVER use this tool when the user asks to see, show, browse, inspect, or visualize photos: ChatGPT cannot save it to a sandbox or display it through this download. For visible photos, use immich_assets_show instead.")]
     public static async Task<CallToolResult> DownloadOriginal(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
@@ -265,7 +265,7 @@ public static class AssetTools
     }
 
     [McpServerTool(Name = "immich_assets_download_thumbnail")]
-    [Description("Fetch a thumbnail for internal model inspection. This tool does not display the photo visibly to the user. When the user asks to see or show photos, finish with immich_assets_show. When DOWNLOAD_MODE=base64, returns the preview image content inline to the model.")]
+    [Description("Fetch a thumbnail only for internal model inspection. NEVER use this tool when the user asks to see, show, browse, inspect, or visualize photos: it does not display a photo to the user and must not be saved to a sandbox. For visible photos, use immich_assets_show instead.")]
     public static async Task<CallToolResult> DownloadThumbnail(
         ImmichClient client,
         [Description("Asset ID (UUID)")] string id,
